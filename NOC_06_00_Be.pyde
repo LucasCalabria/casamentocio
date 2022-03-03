@@ -47,7 +47,6 @@ def setup():
                 g[str(r)+str(c)] = {i for i in paths}
                     
     graph = Graph(g)
-    print(g['77'])
         
     size(900, 600)
     velocity_vehicle = PVector(0, 0)
