@@ -16,69 +16,39 @@ def setup():
     global food
     global tileMap
     global flag
+    global rows
+    global cols
     
     flag = True
-    rows, cols = 64, 36
-    tileMap = [([0]*cols) for i in range(rows)]
+    rows, cols = 15, 10
+    tileMap = [[random.randint(0, 6) for c in range(cols)] for r in range(rows+1)]
+    tileMap[0][0] = 0
+        
     
-    size(640, 360)
+    size(900, 600)
     velocity_vehicle = PVector(0, 0)
     velocity_food = PVector(0, 0)
-    vehicle = Vehicle(width / 2, height / 2, velocity_vehicle)
-    food = Food(width / 5, height / 5, velocity_food)
+    vehicle = Vehicle(300, 300, velocity_vehicle)
+    food = Food(30, 30, velocity_food)
 
 def draw():
-    background(194, 178, 128)
-    global flag
-    global centerWater_x
-    global centerWater_y
-    global tilesWaterNum
-    
-    global centerObst_x
-    global centerObst_y
-    global tilesObstNum
-    
-    global centerMud_x
-    global centerMud_y
-    global tilesMudNum
-    
-    if(flag):
-        flag = False
-        tilesWaterNum = random.randint(3, 6)
-        centerWater_x = []
-        centerWater_y = []
-        for i in range(tilesWaterNum):
-            centerWater_x.append(random.randint(25, 615))
-            centerWater_y.append(random.randint(25, 335))
-            
-        tilesObstNum = random.randint(3, 6)
-        centerObst_x = []
-        centerObst_y = []
-        for i in range(tilesObstNum):
-            centerObst_x.append(random.randint(25, 615))
-            centerObst_y.append(random.randint(25, 335))
-            
-        tilesMudNum = random.randint(3, 6)
-        centerMud_x = []
-        centerMud_y = []
-        for i in range(tilesMudNum):
-            centerMud_x.append(random.randint(25, 615))
-            centerMud_y.append(random.randint(25, 335))
-    
-    for i in range(tilesWaterNum):
-        rectMode(CENTER)
-        fill(161, 202, 241)
-        rect(centerWater_x[i], centerWater_y[i], 50, 50)
-        
-    for i in range(tilesObstNum):
-        rectMode(CENTER)
-        fill(0)
-        rect(centerObst_x[i], centerObst_y[i], 50, 50)
-        
-    for i in range(tilesMudNum):
-        rectMode(CENTER)
-        fill(121, 68, 59)
-        rect(centerMud_x[i], centerMud_y[i], 50, 50)
+    d = 60    
+    for r in range(rows):
+        for c in range(cols):
+            rectMode(CENTER)
+            if (tileMap[r][c] == 0 or tileMap[r][c] == 1):
+                fill(194, 178, 128)
+                
+            elif tileMap[r][c] == 2 or tileMap[r][c] == 3:
+                fill(161, 202, 241)
+                
+            elif tileMap[r][c] == 4 or tileMap[r][c] == 5:
+                fill(121, 68, 59)
+                
+            elif tileMap[r][c] == 6:
+                fill(0)
+                
+            rect(r * d + d/2, c * d + d/2, d, d)
     
     position = food.getPosition()
     food.update()
@@ -87,5 +57,10 @@ def draw():
     vehicle.display()
     vehicle.arrive(position)
     if (food.getPosition().dist(vehicle.getPosition()) <= 7):
-        food.collision()
-    
+        while True:
+            x = random.randint(0, rows-1)
+            y = random.randint(0, cols-1)
+            if tileMap[x][y] != 6: break
+            
+        position = PVector(x * d + d/2, y * d + d/2)
+        food.collision(position)
