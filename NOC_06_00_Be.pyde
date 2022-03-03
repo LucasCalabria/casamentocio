@@ -17,7 +17,7 @@ def setup():
     global tileMap
     global flag
     
-    flag = False
+    flag = True
     rows, cols = 64, 36
     tileMap = [([0]*cols) for i in range(rows)]
     
@@ -27,21 +27,58 @@ def setup():
     vehicle = Vehicle(width / 2, height / 2, velocity_vehicle)
     food = Food(width / 5, height / 5, velocity_food)
 
-    
-    
-
 def draw():
     background(194, 178, 128)
-    if(!flag):
-        flag = True
-        tilesNum = random.randint(0, 20)
-        for i in range(1):
-            center_x = random.randint(10, 630)
-            center_y = random.randint(10, 350)
+    global flag
+    global centerWater_x
+    global centerWater_y
+    global tilesWaterNum
     
-    rectMode(CENTER)
-    fill(161, 202, 241)
-    rect(center_x, center_y, 50, 50)
+    global centerObst_x
+    global centerObst_y
+    global tilesObstNum
+    
+    global centerMud_x
+    global centerMud_y
+    global tilesMudNum
+    
+    if(flag):
+        flag = False
+        tilesWaterNum = random.randint(3, 6)
+        centerWater_x = []
+        centerWater_y = []
+        for i in range(tilesWaterNum):
+            centerWater_x.append(random.randint(25, 615))
+            centerWater_y.append(random.randint(25, 335))
+            
+        tilesObstNum = random.randint(3, 6)
+        centerObst_x = []
+        centerObst_y = []
+        for i in range(tilesObstNum):
+            centerObst_x.append(random.randint(25, 615))
+            centerObst_y.append(random.randint(25, 335))
+            
+        tilesMudNum = random.randint(3, 6)
+        centerMud_x = []
+        centerMud_y = []
+        for i in range(tilesMudNum):
+            centerMud_x.append(random.randint(25, 615))
+            centerMud_y.append(random.randint(25, 335))
+    
+    for i in range(tilesWaterNum):
+        rectMode(CENTER)
+        fill(161, 202, 241)
+        rect(centerWater_x[i], centerWater_y[i], 50, 50)
+        
+    for i in range(tilesObstNum):
+        rectMode(CENTER)
+        fill(0)
+        rect(centerObst_x[i], centerObst_y[i], 50, 50)
+        
+    for i in range(tilesMudNum):
+        rectMode(CENTER)
+        fill(121, 68, 59)
+        rect(centerMud_x[i], centerMud_y[i], 50, 50)
     
     position = food.getPosition()
     food.update()
