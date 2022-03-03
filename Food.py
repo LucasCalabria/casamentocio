@@ -30,7 +30,7 @@ class Food():
     def display(self):
         # Draw a triangle rotated in the direction of velocity
         theta = frameCount / 50.0
-        fill(218,165,32)
+        fill(255,31,31)
         noStroke()
         strokeWeight(1)
         with pushMatrix():
@@ -38,10 +38,11 @@ class Food():
             rotate(theta)
             self.star()
     
-    def collision(self):
-        self.position = PVector(random.randint(0, 640), random.randint(0, 360))
+    def collision(self, position):
+        rows, cols, d = 15, 10, 60
+        self.position = position
         self.count += 1
-        print("A comida foi coletada. Total: " + str(self.count))
+        #print("A comida foi coletada. Total: " + str(self.count))
         
     def getPosition(self):
         return self.position
