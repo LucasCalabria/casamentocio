@@ -8,8 +8,9 @@
 
 import random
 
-from Vehicle import Vehicle
 from Food import Food
+from Graph import Graph
+from Vehicle import Vehicle
 
 def setup():
     global vehicle
@@ -17,17 +18,47 @@ def setup():
     global tileMap
     global rows
     global cols
+    global graph
     
-    rows, cols = 15, 10
-    tileMap = [[random.randint(0, 6) for c in range(cols)] for r in range(rows+1)]
+    rows, cols = 10, 15
+    tileMap = [[random.randint(0, 6) for c in range(cols)] for r in range(rows)]
     tileMap[0][0] = 0
     tileMap[7][7] = 0
+    
+    tileMap[7][6] = 6
+    g = {}
+    for r in range(rows):
+        for c in range(cols):
+            if tileMap[r][c] != 6:
+                paths = []
+                
+                if (r > 0 and tileMap[r-1][c] != 6):
+                    paths.append(str(r-1)+str(c))
+                    
+                if (r < 9 and tileMap[r+1][c] != 6):
+                    paths.append(str(r+1)+str(c))
+                    
+                if (c > 0 and tileMap[r][c-1] != 6):
+                    paths.append(str(r)+str(c-1))
+                    
+                if (c < 14 and tileMap[r][c+1] != 6):
+                    paths.append(str(r)+str(c+1))
+                
+                g[str(r)+str(c)] = {i for i in paths}
+                    
+    graph = Graph(g)
+    print(g['77'])
         
     size(900, 600)
     velocity_vehicle = PVector(0, 0)
     velocity_food = PVector(0, 0)
     vehicle = Vehicle(450, 450, velocity_vehicle)
     food = Food(30, 30, velocity_food)
+    
+    start = '77'
+    goal = '00'
+    
+    print(bfs(start, goal))
 
 def draw():
     d = 60    
@@ -46,19 +77,42 @@ def draw():
             elif tileMap[r][c] == 6:
                 fill(0)
                 
-            rect(r * d + d/2, c * d + d/2, d, d)
+            rect(c * d + d/2, r * d + d/2, d, d)
     
     position = food.getPosition()
     food.update()
     food.display()
-    vehicle.update()
+    #vehicle.update()
     vehicle.display()
     vehicle.arrive(position)
     if (food.getPosition().dist(vehicle.getPosition()) <= 7):
         while True:
-            x = random.randint(0, rows-1)
-            y = random.randint(0, cols-1)
+            y = random.randint(0, rows-1)
+            x = random.randint(0, cols-1)
             if tileMap[x][y] != 6: break
             
-        position = PVector(x * d + d/2, y * d + d/2)
+        position = PVector(y * d + d/2, x * d + d/2)
         food.collision(position)
+        
+def bfs(start, goal):
+    frontier = []
+    frontier.append(start)
+    came_from = dict()
+    came_from[start] = None
+
+    while not frontier == []:
+        current = frontier.pop()
+        for next in graph.edges(current):
+            if next not in came_from:
+                frontier.append(next)
+                came_from[next] = current
+                
+    current = goal
+    path = []
+    while current != start: 
+        path.append(current)
+        current = came_from[current]
+    path.append(start) # optional
+    path.reverse() # optional
+    
+    return path
