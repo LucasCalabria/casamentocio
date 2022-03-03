@@ -15,20 +15,18 @@ def setup():
     global vehicle
     global food
     global tileMap
-    global flag
     global rows
     global cols
     
-    flag = True
     rows, cols = 15, 10
     tileMap = [[random.randint(0, 6) for c in range(cols)] for r in range(rows+1)]
     tileMap[0][0] = 0
+    tileMap[7][7] = 0
         
-    
     size(900, 600)
     velocity_vehicle = PVector(0, 0)
     velocity_food = PVector(0, 0)
-    vehicle = Vehicle(300, 300, velocity_vehicle)
+    vehicle = Vehicle(450, 450, velocity_vehicle)
     food = Food(30, 30, velocity_food)
 
 def draw():
