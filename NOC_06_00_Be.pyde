@@ -54,10 +54,11 @@ def setup():
     vehicle = Vehicle(450, 450, velocity_vehicle)
     food = Food(30, 30, velocity_food)
     
-    start = '77'
-    goal = '00'
-    
-    print(bfs(start, goal))
+    f_position1 = food.getPosition()
+    v_position1 = vehicle.getPosition()
+    start1 = str(int((v_position1.y-30)/60)) + str(int((v_position1.x-30)/60))
+    goal1 = str(int((f_position1.y-30)/60)) + str(int((f_position1.x-30)/60))
+    print(bfs(start1, goal1))
 
 def draw():
     d = 60    
@@ -78,16 +79,33 @@ def draw():
                 
             rect(c * d + d/2, r * d + d/2, d, d)
     
-    position = food.getPosition()
     food.update()
+    vehicle.update()
+    
+    f_position = food.getPosition()
+    v_position = vehicle.getPosition()
+    
+    start = str(int((v_position.y-30)/60)) + str(int((v_position.x-30)/60))
+    goal = str(int((f_position.y-30)/60)) + str(int((f_position.x-30)/60))
+    
+    path = bfs(start, goal)
+    
+    for i in path:
+        #vehicle.arrive(PVector(int(i[0])*60+30, int(i[1:])*60+30))
+        r = int(i[0])
+        c = int(i[1:])
+        
+        rectMode(CENTER)
+        fill(245, 30, 231)
+        rect(c * d + d/2, r * d + d/2, d, d)
+        
     food.display()
-    #vehicle.update()
     vehicle.display()
-    vehicle.arrive(position)
+    
     if (food.getPosition().dist(vehicle.getPosition()) <= 7):
         while True:
-            y = random.randint(0, rows-1)
-            x = random.randint(0, cols-1)
+            y = random.randint(0, rows)
+            x = random.randint(0, cols)
             if tileMap[x][y] != 6: break
             
         position = PVector(y * d + d/2, x * d + d/2)
