@@ -14,6 +14,9 @@ from Graph import Graph
 from Vehicle import Vehicle
 
 tileMapBkp = []
+state = "menu"
+path = []
+visited = []
 
 def setup():
     global vehicle
@@ -24,13 +27,10 @@ def setup():
     global cols
     global graph
     global tipoBusca
-    global printPath
-    global drawLoop
     global pathPosition
     global start
     global goal
     
-    drawLoop = 0
     pathPosition = 0
     printPath = True
     
@@ -40,7 +40,6 @@ def setup():
     tileMap[7][7] = 0
     
     tileMapBkp = copy.deepcopy(tileMap)
-    print(tileMapBkp)
     
     g = {}
     for r in range(rows):
@@ -83,12 +82,16 @@ def draw():
     global d
     global printPath
     global pathPosition
-    global drawLoop
     global path
     global start
     global goal
     global tileMapBkp
     global tileMap
+    global state
+    global frontier
+    global came_from
+    global drawLoop
+    global visited
     
     d = 60
     for r in range(rows):
@@ -105,81 +108,144 @@ def draw():
                 fill(121, 68, 59)
                 
             if tileMap[r][c] == 6:
-                fill(0)
+                fill(0,128,0)
             
-            elif tileMap[r][c] == 7:
-                fill(245, 30, 231)
+            if tileMap[r][c] == 7:
+                fill(245, 30, 231, 250)
                 
             rect(c * d + d/2, r * d + d/2, d, d)
+            
+    for v in visited:
+        r = int(v[0])
+        c = int(v[1:])
+        
+        rectMode(CENTER)
+        fill(0, 170)
+        rect(c * d + d/2, r * d + d/2, d, d)
+        
     
-    food.update()
-    vehicle.update()
-    
-    if printPath:
+    if (state == "menu"):
+        background(0)
+        textSize(32)
+        fill(255)
+        
+        texto = "Escolha um modelo de busca:"
+        text (texto, 30,50)
+        
+        textSize(16)
+        texto = "1 - Busca em largura"
+        text (texto, 30,75)
+        
+        texto = "2 - Busca em profundidade"
+        text (texto, 30,100)
+        
+        if keyPressed:
+            if key == '1':
+                frontier = []
+                visited = []
+                frontier.append(start)
+                came_from = dict()
+                came_from[start] = None
+                state = "bfs"
+                
+            if key == '2':
+                caminhoTemp = []
+                visited = []
+                state = "dfs"
+                        
         f_position = food.getPosition()
         v_position = vehicle.getPosition()
         
-        #start(int((v_position.y-30)/60)) + str(int((v_position.x-30)/60))
         goal = str(int((f_position.y-30)/60)) + str(int((f_position.x-30)/60))
-    
-        path = bfs(start, goal)
-    
-    if (drawLoop % 10 == 0 and printPath):
-        i = path[drawLoop/10]
-        r = int(i[0])
-        c = int(i[1:])
         
-        tileMap[r][c] = 7
-        if (drawLoop/10 == (len(path)-1)):
-            printPath = False
+    if (state == "bfs"):
+        if not (frontier == []):
+            current = frontier.pop()
             
-    if (pathPosition < len(path) and not printPath):
+            if current == goal:
+                bfs(start, goal, came_from)
+                drawLoop = 0
+                state = "print path"
+                
+            r = int(current[0])
+            c = int(current[1:])
+            
+            visited.append(current)
+                
+            rectMode(CENTER)
+            fill(255,0,0)
+            rect(c * d + d/2, r * d + d/2, d, d)
+            
+            for x in frontier:
+                r = int(x[0])
+                c = int(x[1:])
+                
+                rectMode(CENTER)
+                fill(255,0, 0, 100)
+                rect(c * d + d/2, r * d + d/2, d, d)
+
+            for next in graph.edges(current):
+                if next not in came_from:
+                    frontier.append(next)
+                    came_from[next] = current
+                    
+        else:
+            bfs(start, goal, came_from)
+            drawLoop = 0
+            state = "print path"
+    
+    if (state == "print path"):
+        if(drawLoop % 10 == 0):
+            i = path[drawLoop/10]
+            r = int(i[0])
+            c = int(i[1:])
+            
+            tileMap[r][c] = 7
+            if (drawLoop/10 == (len(path)-1)):
+                state = "get food"
+                
+        drawLoop += 1
+            
+    if (state == "get food" and pathPosition < len(path)):
         i = path[pathPosition]
         r = int(i[0])
         c = int(i[1:])
         
         position = PVector(c * d + d/2, r * d + d/2)
         vehicle.arrive(position)
+        vehicle.update()
+        
         
         if (vehicle.getPosition().dist(position) <= 5):
             pathPosition +=1
-        
-    food.display()
-    vehicle.display()
     
-    if (food.getPosition().dist(vehicle.getPosition()) <= 7):
-        drawLoop = 0
-        pathPosition = 0
-        printPath = True
-        start = goal
-        tileMap = copy.deepcopy(tileMapBkp)
-        #velocity_vehicle = PVector(0, 0)
-        
-        while True:
-            y = random.randint(0, rows-1)
-            x = random.randint(0, cols-1)
-            if tileMap[y][x] != 6: break
+        if (food.getPosition().dist(vehicle.getPosition()) <= 7):
+            state = "menu"
+            drawLoop = 0
+            pathPosition = 0
+            start = goal
+            tileMap = copy.deepcopy(tileMapBkp)
+            #velocity_vehicle = PVector(0, 0)
             
-        position = PVector(x * d + d/2, y * d + d/2)
-        food.collision(position)
-        
-    drawLoop += 1
-    
-def bfs(start, goal):
-    frontier = []
-    frontier.append(start)
-    came_from = dict()
-    came_from[start] = None
-
-    while not frontier == []:
-        current = frontier.pop()
-        for next in graph.edges(current):
-            if next not in came_from:
-                frontier.append(next)
-                came_from[next] = current
+            while True:
+                y = random.randint(0, rows-1)
+                x = random.randint(0, cols-1)
+                if tileMap[y][x] != 6: break
                 
+            position = PVector(x * d + d/2, y * d + d/2)
+            food.collision(position)
+
+
+    if not state == 'menu':
+        food.display()
+        vehicle.display()
+    
+def bfs(start, goal, came_from):
+    global path
+    
     current = goal
     path = []
+    
     while current != start: 
         path.append(current)
         current = came_from[current]
@@ -188,3 +254,16 @@ def bfs(start, goal):
     path.reverse() # optional
     
     return path
+
+def dfs(start, goal, path, visited):
+    path.append(start)
+    visited.append(start)
+    if start == goal:    #caso estejamos no lugar final, é retornado o vetor de caminho
+        return path
+    for next in graph.edges(start):
+        if next not in visited:
+            result = dfs(next, goal, path, visited)
+            if result is not None:
+                return result
+    path.pop()
+    return None
