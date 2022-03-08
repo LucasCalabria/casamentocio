@@ -7,17 +7,19 @@
 # Draws a "vehicle" on the screen
 
 import random
-import time
-import threading
+import copy
 
 from Food import Food
 from Graph import Graph
 from Vehicle import Vehicle
 
+tileMapBkp = []
+
 def setup():
     global vehicle
     global food
     global tileMap
+    global tileMapBkp
     global rows
     global cols
     global graph
@@ -36,6 +38,9 @@ def setup():
     tileMap = [[random.randint(0, 6) for c in range(cols)] for r in range(rows)]
     tileMap[0][0] = 0
     tileMap[7][7] = 0
+    
+    tileMapBkp = copy.deepcopy(tileMap)
+    print(tileMapBkp)
     
     g = {}
     for r in range(rows):
@@ -82,6 +87,8 @@ def draw():
     global path
     global start
     global goal
+    global tileMapBkp
+    global tileMap
     
     d = 60
     for r in range(rows):
@@ -107,8 +114,6 @@ def draw():
     
     food.update()
     vehicle.update()
-    
-    
     
     if printPath:
         f_position = food.getPosition()
@@ -147,13 +152,15 @@ def draw():
         pathPosition = 0
         printPath = True
         start = goal
+        tileMap = copy.deepcopy(tileMapBkp)
+        #velocity_vehicle = PVector(0, 0)
         
         while True:
             y = random.randint(0, rows-1)
             x = random.randint(0, cols-1)
             if tileMap[y][x] != 6: break
             
-        position = PVector(y * d + d/2, x * d + d/2)
+        position = PVector(x * d + d/2, y * d + d/2)
         food.collision(position)
         
     drawLoop += 1
