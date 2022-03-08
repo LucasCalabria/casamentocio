@@ -11,7 +11,7 @@ class Vehicle():
         self.velocity = vel
         self.position = PVector(x, y)
         self.r = 6
-        self.maxspeed = 5
+        self.maxspeed = 10
         self.maxforce = 0.2
 
     # Method to update location
@@ -72,3 +72,16 @@ class Vehicle():
         
     def getPosition(self):
         return self.position
+    
+    def seek(self, target):
+
+        # A vector pointing from the location to the target
+        desired = target - self.position
+
+        # Scale to maximum speed
+        desired.setMag(0.01)
+
+        steer = desired - self.velocity
+        steer.limit(0.05)  # Limit to maximum steering force
+
+        self.applyForce(steer)
