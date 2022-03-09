@@ -17,6 +17,7 @@ tileMapBkp = []
 state = "menu"
 path = []
 visited = []
+frontier = []
 
 def setup():
     global vehicle
@@ -63,12 +64,6 @@ def setup():
                     
     graph = Graph(g)
     
-    '''while True:
-        if keyPressed:
-            if key == '1':
-                tipobusca = 1
-                break'''
-    
     size(900, 600)
     velocity_vehicle = PVector(0, 0)
     velocity_food = PVector(0, 0)
@@ -92,6 +87,7 @@ def draw():
     global came_from
     global drawLoop
     global visited
+    global current
     
     d = 60
     for r in range(rows):
@@ -99,16 +95,16 @@ def draw():
             rectMode(CENTER)
             noStroke()
             if (tileMap[r][c] == 0 or tileMap[r][c] == 1):
-                fill(194, 178, 128)
-                
+                fill(255, 247, 0)
+
             if tileMap[r][c] == 2 or tileMap[r][c] == 3:
-                fill(161, 202, 241)
-                
+                fill(232, 225, 31)
+
             if tileMap[r][c] == 4 or tileMap[r][c] == 5:
-                fill(121, 68, 59)
-                
+                fill(196, 191, 51)
+
             if tileMap[r][c] == 6:
-                fill(0,128,0)
+                fill(0,0,0)
             
             if tileMap[r][c] == 7:
                 fill(245, 30, 231, 250)
@@ -123,6 +119,14 @@ def draw():
         fill(0, 170)
         rect(c * d + d/2, r * d + d/2, d, d)
         
+    for f in frontier:
+        r = int(f[0])
+        c = int(f[1:])
+        
+        rectMode(CENTER)
+        fill(255,0, 0, 100)
+        rect(c * d + d/2, r * d + d/2, d, d)
+        
     
     if (state == "menu"):
         background(0)
@@ -135,22 +139,36 @@ def draw():
         textSize(16)
         texto = "1 - Busca em largura"
         text (texto, 30,75)
-        
+
+        textSize(16)
         texto = "2 - Busca em profundidade"
         text (texto, 30,100)
+
+        textSize(16)
+        texto = "3 - Busca em custo uniforme"
+        text (texto, 30,125)
+
+        textSize(16)
+        texto = "4 - Busca em gulosa"
+        text (texto, 30,150)
+
+        textSize(16)
+        texto = "5 - Busca em A*"
+        text (texto, 30,175)
         
         if keyPressed:
             if key == '1':
-                frontier = []
                 visited = []
+                frontier = []
                 frontier.append(start)
+                
                 came_from = dict()
                 came_from[start] = None
                 state = "bfs"
                 
             if key == '2':
-                caminhoTemp = []
                 visited = []
+                current = start
                 state = "dfs"
                         
         f_position = food.getPosition()
@@ -160,31 +178,31 @@ def draw():
         
     if (state == "bfs"):
         if not (frontier == []):
-            current = frontier.pop()
-            
+            current = frontier.pop(0)
+                
             if current == goal:
                 bfs(start, goal, came_from)
                 drawLoop = 0
                 state = "print path"
-                
+                    
             r = int(current[0])
             c = int(current[1:])
-            
-            visited.append(current)
                 
+            visited.append(current)
+                    
             rectMode(CENTER)
             fill(255,0,0)
             rect(c * d + d/2, r * d + d/2, d, d)
-            
+                
             for x in frontier:
                 r = int(x[0])
                 c = int(x[1:])
-                
+                    
                 rectMode(CENTER)
                 fill(255,0, 0, 100)
                 rect(c * d + d/2, r * d + d/2, d, d)
-
-            for next in graph.edges(current):
+    
+            for next in vizinho(current):
                 if next not in came_from:
                     frontier.append(next)
                     came_from[next] = current
@@ -193,6 +211,22 @@ def draw():
             bfs(start, goal, came_from)
             drawLoop = 0
             state = "print path"
+            
+    if (state == "dfs"):
+        path.append(current)
+        visited.append(current)
+        
+        if current == goal:
+            drawLoop = 0
+            state = "print path"
+            
+        for next in vizinho(current):
+            if next not in visited:
+                current = next
+                
+        path.pop()
+        #dfs(start, goal, path, visited)
+        
     
     if (state == "print path"):
         if(drawLoop % 10 == 0):
@@ -203,6 +237,7 @@ def draw():
             tileMap[r][c] = 7
             if (drawLoop/10 == (len(path)-1)):
                 state = "get food"
+                
                 
         drawLoop += 1
             
@@ -239,6 +274,21 @@ def draw():
     if not state == 'menu':
         food.display()
         vehicle.display()
+        textSize(25)
+        texto = "Preto = Obstaculo"
+        fill (255,255,255)
+        
+        textAlign(CENTER) 
+        text (texto, 450,50)
+        texto = "Amarelo Claro = Areia"
+        text (texto, 450,75)
+
+        texto = "Amarelo = Atoleiro"
+        text (texto, 450,100)
+
+        texto = "Amarelo Escuro = Agua"
+        text (texto, 450,125)
+        textAlign(LEFT) 
     
 def bfs(start, goal, came_from):
     global path
@@ -260,10 +310,29 @@ def dfs(start, goal, path, visited):
     visited.append(start)
     if start == goal:    #caso estejamos no lugar final, é retornado o vetor de caminho
         return path
-    for next in graph.edges(start):
+    for next in vizinho(start):
         if next not in visited:
             result = dfs(next, goal, path, visited)
             if result is not None:
                 return result
     path.pop()
     return None
+
+def vizinho(start):
+    global tileMapBkp
+    paths = []
+    r = int(start[0])
+    c = int(start[1:])
+    if tileMapBkp[r][c] != 6:
+        if (r > 0 and tileMap[r-1][c] != 6):
+            paths.append(str(r-1)+str(c))
+                    
+        if (r < 9 and tileMap[r+1][c] != 6):
+            paths.append(str(r+1)+str(c))
+                    
+        if (c > 0 and tileMap[r][c-1] != 6):
+            paths.append(str(r)+str(c-1))
+                    
+        if (c < 14 and tileMap[r][c+1] != 6):
+            paths.append(str(r)+str(c+1))
+    return paths
