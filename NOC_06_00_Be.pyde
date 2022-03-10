@@ -1,17 +1,13 @@
-# The Nature of Code
-# Daniel Shiffman
-# http://natureofcode.com
-#
-# Modified by Filipe Calegario
-
-# Draws a "vehicle" on the screen
-
 import random
 import copy
 
 from Food import Food
 from Graph import Graph
 from Vehicle import Vehicle
+
+# areia = 1
+# atoleiro = 5
+# agua = 10
 
 tileMapBkp = []
 state = "menu"
@@ -88,6 +84,9 @@ def draw():
     global drawLoop
     global visited
     global current
+    global currentNode
+    global minDistance
+    global predecessor
     
     d = 60
     for r in range(rows):
@@ -156,6 +155,12 @@ def draw():
         texto = "5 - Busca em A*"
         text (texto, 30,175)
         
+        f_position = food.getPosition()
+        v_position = vehicle.getPosition()
+        
+        start = str(int((v_position.y-30)/60)) + str(int((v_position.x-30)/60))
+        goal = str(int((f_position.y-30)/60)) + str(int((f_position.x-30)/60))
+        
         if keyPressed:
             if key == '1':
                 visited = []
@@ -171,11 +176,19 @@ def draw():
                 current = start
                 state = "dfs"
                         
-        f_position = food.getPosition()
-        v_position = vehicle.getPosition()
-        
-        goal = str(int((f_position.y-30)/60)) + str(int((f_position.x-30)/60))
-        
+            if key == '3':
+                visited = []
+                frontier = []
+                frontier.append(start)
+                
+                minDistances, predecessor = dijkstra(start)
+                print(minDistances[goal])
+    
+                path = []
+                currentNode = goal
+                
+                state = "busca uniforme"
+                
     if (state == "bfs"):
         if not (frontier == []):
             current = frontier.pop(0)
@@ -225,9 +238,34 @@ def draw():
                 current = next
                 
         path.pop()
-        #dfs(start, goal, path, visited)
         
-    
+    if (state == "busca uniforme"):
+        print(predecessor)
+        if not currentNode == start:
+            visited.append(currentNode)
+            
+            r = int(currentNode[0])
+            c = int(currentNode[1:])
+            
+            rectMode(CENTER)
+            fill(255,0,0)
+            rect(c * d + d/2, r * d + d/2, d, d)
+            
+            if currentNode not in predecessor:
+                print("Path not reachable")
+                path.insert(0, start)
+                drawLoop = 0
+                state = "print path"
+                
+            else:
+                path.insert(0, currentNode)
+                currentNode = predecessor[currentNode]
+            
+        else:
+            path.insert(0, start)
+            drawLoop = 0
+            state = "print path"
+            
     if (state == "print path"):
         if(drawLoop % 10 == 0):
             i = path[drawLoop/10]
@@ -237,7 +275,6 @@ def draw():
             tileMap[r][c] = 7
             if (drawLoop/10 == (len(path)-1)):
                 state = "get food"
-                
                 
         drawLoop += 1
             
@@ -260,7 +297,6 @@ def draw():
             pathPosition = 0
             start = goal
             tileMap = copy.deepcopy(tileMapBkp)
-            #velocity_vehicle = PVector(0, 0)
             
             while True:
                 y = random.randint(0, rows-1)
@@ -336,3 +372,46 @@ def vizinho(start):
         if (c < 14 and tileMap[r][c+1] != 6):
             paths.append(str(r)+str(c+1))
     return paths
+
+def peso(position):
+    global tileMapBkp
+    
+    r = int(position[0])
+    c = int(position[1:])
+    
+    if (tileMap[r][c] == 0 or tileMap[r][c] == 1):
+        return 1
+
+    if tileMap[r][c] == 2 or tileMap[r][c] == 3:
+        return 5
+
+    if tileMap[r][c] == 4 or tileMap[r][c] == 5:
+        return 10
+
+    return 1000
+
+
+def dijkstra(start):
+    queue = [start]
+    minDistances_d = {}
+    
+    for r in range(rows):
+        for c in range(cols):
+            minDistances_d[str(r)+str(c)] = sys.maxsize
+
+    minDistances_d[start] = 0
+    predecessor_d = {}
+
+    while queue:
+        currentNode_d = queue.pop(0)
+        print(currentNode_d)
+        
+        for neighbor in vizinho(currentNode_d):
+            newDist = minDistances_d[currentNode_d] + peso(neighbor)
+            
+            if newDist < minDistances_d[neighbor]:
+                minDistances_d[neighbor] = min(newDist, minDistances_d[neighbor])
+                queue.append(neighbor)
+                predecessor_d[neighbor] = currentNode_d
+    
+    return minDistances_d, predecessor_d
