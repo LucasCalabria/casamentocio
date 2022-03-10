@@ -149,16 +149,21 @@ def draw():
         text (texto, 30,100)
 
         textSize(16)
-        texto = "3 - Busca em custo uniforme"
+        texto = "3 - Busca de custo uniforme"
         text (texto, 30,125)
 
         textSize(16)
-        texto = "4 - Busca em gulosa"
+        texto = "4 - Busca gulosa"
         text (texto, 30,150)
 
         textSize(16)
-        texto = "5 - Busca em A*"
+        texto = "5 - Busca de A*"
         text (texto, 30,175)
+        
+        textSize(16)
+        texto = "6 - Sair"
+        text (texto, 30, 200)
+        
         
         f_position = food.getPosition()
         v_position = vehicle.getPosition()
@@ -210,6 +215,9 @@ def draw():
                 cost_so_far[start] = 0
                 
                 state = "A*"
+                
+            if key == '6':
+                exit()
                 
     if (state == "bfs"):
         if not (frontier == []):
