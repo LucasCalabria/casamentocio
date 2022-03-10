@@ -2,18 +2,24 @@ import random
 import copy
 
 from Food import Food
-from Graph import Graph
 from Vehicle import Vehicle
+from PriorityQueue import PriorityQueue
 
 # areia = 1
 # atoleiro = 5
 # agua = 10
 
+d = 60
 tileMapBkp = []
 state = "menu"
 path = []
 visited = []
 frontier = []
+minDistances = {}
+printPath = []
+drawLoop = 0
+start= "77"
+goal = "00"
 
 def setup():
     global vehicle
@@ -22,23 +28,19 @@ def setup():
     global tileMapBkp
     global rows
     global cols
-    global graph
-    global tipoBusca
     global pathPosition
     global start
     global goal
     
     pathPosition = 0
-    printPath = True
-    
     rows, cols = 10, 15
+    
     tileMap = [[random.randint(0, 6) for c in range(cols)] for r in range(rows)]
     tileMap[0][0] = 0
     tileMap[7][7] = 0
-    
+        
     tileMapBkp = copy.deepcopy(tileMap)
     
-    g = {}
     for r in range(rows):
         for c in range(cols):
             if tileMap[r][c] != 6:
@@ -55,19 +57,12 @@ def setup():
                     
                 if (c < 14 and tileMap[r][c+1] != 6):
                     paths.append(str(r)+str(c+1))
-                
-                g[str(r)+str(c)] = {i for i in paths}
-                    
-    graph = Graph(g)
     
     size(900, 600)
     velocity_vehicle = PVector(0, 0)
     velocity_food = PVector(0, 0)
     vehicle = Vehicle(450, 450, velocity_vehicle)
     food = Food(30, 30, velocity_food)
-    
-    start= "77"
-    goal = "00"
 
 def draw():
     global d
@@ -85,28 +80,30 @@ def draw():
     global visited
     global current
     global currentNode
-    global minDistance
+    global currentNodeAux
+    global minDistances
     global predecessor
+    global queue
+    global printPath
+    global frontierPQ
+    global cost_so_far
+    global stack
     
-    d = 60
     for r in range(rows):
         for c in range(cols):
             rectMode(CENTER)
             noStroke()
             if (tileMap[r][c] == 0 or tileMap[r][c] == 1):
-                fill(255, 247, 0)
+                fill(190,190,50)
 
             if tileMap[r][c] == 2 or tileMap[r][c] == 3:
-                fill(232, 225, 31)
+                fill(230, 230, 30)
 
             if tileMap[r][c] == 4 or tileMap[r][c] == 5:
-                fill(196, 191, 51)
+                fill(255, 255, 0)
 
             if tileMap[r][c] == 6:
                 fill(0,0,0)
-            
-            if tileMap[r][c] == 7:
-                fill(245, 30, 231, 250)
                 
             rect(c * d + d/2, r * d + d/2, d, d)
             
@@ -123,7 +120,15 @@ def draw():
         c = int(f[1:])
         
         rectMode(CENTER)
-        fill(255,0, 0, 100)
+        fill(0,255, 0, 100)
+        rect(c * d + d/2, r * d + d/2, d, d)
+        
+    for p in printPath:
+        r = int(p[0])
+        c = int(p[1:])
+        
+        rectMode(CENTER)
+        fill(255,204, 255)
         rect(c * d + d/2, r * d + d/2, d, d)
         
     
@@ -158,43 +163,60 @@ def draw():
         f_position = food.getPosition()
         v_position = vehicle.getPosition()
         
-        start = str(int((v_position.y-30)/60)) + str(int((v_position.x-30)/60))
-        goal = str(int((f_position.y-30)/60)) + str(int((f_position.x-30)/60))
+        visited = []
+        printPath = []
+        frontier = []
+        frontier.append(start)
         
         if keyPressed:
             if key == '1':
-                visited = []
-                frontier = []
-                frontier.append(start)
-                
                 came_from = dict()
                 came_from[start] = None
                 state = "bfs"
                 
             if key == '2':
-                visited = []
-                current = start
+                came_from = dict()
+                came_from[start] = None
+                drawLoop = 0
                 state = "dfs"
                         
             if key == '3':
-                visited = []
-                frontier = []
-                frontier.append(start)
+                frontierPQ = PriorityQueue()
+                frontierPQ.put(start, 0)
                 
-                minDistances, predecessor = dijkstra(start)
-                print(minDistances[goal])
-    
-                path = []
-                currentNode = goal
+                came_from = dict()
+                cost_so_far = dict()
+                came_from[start] = None                
+                cost_so_far[start] = 0
                 
-                state = "busca uniforme"
+                state = 'busca uniforme'
+                
+            if key == '4':
+                frontierPQ = PriorityQueue()
+                frontierPQ.put(start, 0)
+                
+                came_from = dict()
+                came_from[start] = None
+                
+                state = 'busca gulosa'
+                
+            if key == '5':
+                frontierPQ = PriorityQueue()
+                frontierPQ.put(start, 0)
+                
+                came_from = dict()
+                cost_so_far = dict()
+                came_from[start] = None
+                cost_so_far[start] = 0
+                
+                state = "A*"
                 
     if (state == "bfs"):
         if not (frontier == []):
             current = frontier.pop(0)
                 
             if current == goal:
-                bfs(start, goal, came_from)
+                getPath(start, goal, came_from)
                 drawLoop = 0
                 state = "print path"
                     
@@ -212,7 +234,7 @@ def draw():
                 c = int(x[1:])
                     
                 rectMode(CENTER)
-                fill(255,0, 0, 100)
+                fill(0,255, 0, 100)
                 rect(c * d + d/2, r * d + d/2, d, d)
     
             for next in vizinho(current):
@@ -221,58 +243,142 @@ def draw():
                     came_from[next] = current
                     
         else:
-            bfs(start, goal, came_from)
+            gethpath(start, goal, came_from)
             drawLoop = 0
             state = "print path"
             
     if (state == "dfs"):
-        path.append(current)
-        visited.append(current)
+        if (drawLoop % 1 ==0):
+            if not (frontier == []):
+                current = frontier.pop()
+                    
+                if current == goal:
+                    getPath(start, goal, came_from)
+                    drawLoop = 0
+                    state = "print path"
+                        
+                r = int(current[0])
+                c = int(current[1:])
+                    
+                visited.append(current)
+                        
+                rectMode(CENTER)
+                fill(255,0,0)
+                rect(c * d + d/2, r * d + d/2, d, d)
+                    
+                for x in frontier:
+                    r = int(x[0])
+                    c = int(x[1:])
+                        
+                    rectMode(CENTER)
+                    fill(0,255, 0, 100)
+                    rect(c * d + d/2, r * d + d/2, d, d)
         
-        if current == goal:
-            drawLoop = 0
-            state = "print path"
-            
-        for next in vizinho(current):
-            if next not in visited:
-                current = next
+                for next in vizinho(current):
+                    if next not in came_from:
+                        frontier.append(next)
+                        came_from[next] = current
+                        
+            else:
+                gethPath(start, goal, came_from)
+                drawLoop = 0
+                state = "print path"
                 
-        path.pop()
-        
+        drawLoop += 1
+                
     if (state == "busca uniforme"):
-        print(predecessor)
-        if not currentNode == start:
-            visited.append(currentNode)
+        if(drawLoop % 1 == 0):
+            if not frontierPQ.empty():
+                current = frontierPQ.get()
+                
+                visited.append(current)
+                #frontier.remove(current)
+                
+                r = int(current[0])
+                c = int(current[1:])
+                
+                rectMode(CENTER)
+                fill(255,0,0)
+                rect(c * d + d/2, r * d + d/2, d, d)
+    
+                if current == goal:
+                    drawLoop = 0
+                    state = "print path"
+                    getPath(start, goal, came_from)
+                    
+                for next in vizinho(current):
+                    #frontier.append(next)
+    
+                    new_cost = cost_so_far[current] + peso(next)
+                    if next not in cost_so_far or new_cost < cost_so_far[next]:
+                        cost_so_far[next] = new_cost
+                        priority = new_cost
+                        frontierPQ.put(next, priority)
+                        came_from[next] = current
+                        
+            else:
+                getPath(start, goal, came_from)
+                drawLoop = 0
+                state = "print path"
+        drawLoop += 1
+    
+    if (state == 'busca gulosa'):
+        if not frontierPQ.empty():
+            current = str(frontierPQ.get())
+            visited.append(current)
             
-            r = int(currentNode[0])
-            c = int(currentNode[1:])
-            
+            r = int(current[0])
+            c = int(current[1:])
+                
             rectMode(CENTER)
             fill(255,0,0)
             rect(c * d + d/2, r * d + d/2, d, d)
             
-            if currentNode not in predecessor:
-                print("Path not reachable")
-                path.insert(0, start)
+            if current == goal:
                 drawLoop = 0
+                getPath(start, goal, came_from)
                 state = "print path"
                 
-            else:
-                path.insert(0, currentNode)
-                currentNode = predecessor[currentNode]
-            
+            for next in vizinho(current):
+                if next not in came_from:
+                    priority = heuristic(goal, next)
+                    frontierPQ.put(next, priority)
+                    came_from[next] = current
         else:
-            path.insert(0, start)
             drawLoop = 0
+            getPath(start, goal, came_from)
             state = "print path"
             
-    if (state == "print path"):
-        if(drawLoop % 10 == 0):
-            i = path[drawLoop/10]
-            r = int(i[0])
-            c = int(i[1:])
+    if (state == "A*"):
+        if not frontierPQ.empty():
+            current = frontierPQ.get()
             
-            tileMap[r][c] = 7
+            visited.append(current)
+            
+            r = int(current[0])
+            c = int(current[1:])
+                
+            rectMode(CENTER)
+            fill(255,0,0)
+            rect(c * d + d/2, r * d + d/2, d, d)
+            
+            if current == goal:
+                drawLoop = 0
+                getPath(start, goal, came_from)
+                state = "print path"
+                
+            for next in vizinho(current):
+                new_cost = cost_so_far[current] + peso(next)
+                if next not in cost_so_far or new_cost < cost_so_far[next]:
+                    cost_so_far[next] = new_cost
+                    priority = new_cost + heuristic(goal, next)
+                    frontierPQ.put(next, priority)
+                    came_from[next] = current
+            
+    if (state == "print path"):
+        if(drawLoop % 1 == 0):
+            printPath.append(path[drawLoop/10])
+                
             if (drawLoop/10 == (len(path)-1)):
                 state = "get food"
                 
@@ -303,6 +409,9 @@ def draw():
                 x = random.randint(0, cols-1)
                 if tileMap[y][x] != 6: break
                 
+            start = goal
+            goal = str(y) + str(x)
+            
             position = PVector(x * d + d/2, y * d + d/2)
             food.collision(position)
 
@@ -310,23 +419,9 @@ def draw():
     if not state == 'menu':
         food.display()
         vehicle.display()
-        textSize(25)
-        texto = "Preto = Obstaculo"
-        fill (255,255,255)
         
-        textAlign(CENTER) 
-        text (texto, 450,50)
-        texto = "Amarelo Claro = Areia"
-        text (texto, 450,75)
-
-        texto = "Amarelo = Atoleiro"
-        text (texto, 450,100)
-
-        texto = "Amarelo Escuro = Agua"
-        text (texto, 450,125)
-        textAlign(LEFT) 
     
-def bfs(start, goal, came_from):
+def getPath(start, goal, came_from):
     global path
     
     current = goal
@@ -341,24 +436,12 @@ def bfs(start, goal, came_from):
     
     return path
 
-def dfs(start, goal, path, visited):
-    path.append(start)
-    visited.append(start)
-    if start == goal:    #caso estejamos no lugar final, é retornado o vetor de caminho
-        return path
-    for next in vizinho(start):
-        if next not in visited:
-            result = dfs(next, goal, path, visited)
-            if result is not None:
-                return result
-    path.pop()
-    return None
-
 def vizinho(start):
     global tileMapBkp
     paths = []
     r = int(start[0])
     c = int(start[1:])
+    
     if tileMapBkp[r][c] != 6:
         if (r > 0 and tileMap[r-1][c] != 6):
             paths.append(str(r-1)+str(c))
@@ -371,6 +454,7 @@ def vizinho(start):
                     
         if (c < 14 and tileMap[r][c+1] != 6):
             paths.append(str(r)+str(c+1))
+            
     return paths
 
 def peso(position):
@@ -390,28 +474,12 @@ def peso(position):
 
     return 1000
 
-
-def dijkstra(start):
-    queue = [start]
-    minDistances_d = {}
-    
-    for r in range(rows):
-        for c in range(cols):
-            minDistances_d[str(r)+str(c)] = sys.maxsize
-
-    minDistances_d[start] = 0
-    predecessor_d = {}
-
-    while queue:
-        currentNode_d = queue.pop(0)
-        print(currentNode_d)
-        
-        for neighbor in vizinho(currentNode_d):
-            newDist = minDistances_d[currentNode_d] + peso(neighbor)
-            
-            if newDist < minDistances_d[neighbor]:
-                minDistances_d[neighbor] = min(newDist, minDistances_d[neighbor])
-                queue.append(neighbor)
-                predecessor_d[neighbor] = currentNode_d
-    
-    return minDistances_d, predecessor_d
+def heuristic(a, b):
+   # Manhattan distance on a square grid
+   ay = int(a[0])
+   ax = int(a[1:])
+   
+   by = int(b[0])
+   bx = int(b[1:])
+   
+   return abs(ax - bx) + abs(ay - by)
